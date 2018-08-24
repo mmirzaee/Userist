@@ -1,0 +1,62 @@
+---
+mysql:
+  username: root
+  password: root
+  database: userist
+  host: localhost
+  port: '3306'
+
+admin_defaults:
+  username: admin
+  password: admin
+  display_name: admin
+  email: admin@local
+
+base_tenant_defaults:
+  name: main
+
+#http_server:
+#  port: 4110
+#  host: 127.0.0.1
+
+#jwt:
+#  secret: ChangeThisSecretString
+#  lifetime: 94608000
+
+#log:
+#  enable_http_requests_log: false
+#  enable_mysql_queries_log: true
+
+#permissions:
+#- id: dc
+#  title: drink coke
+
+
+#roles:
+#- name: helpdesk
+#  inherits:
+#  - user
+#  permissions:
+#  - rou
+#  - rusd
+#- name: manager
+#  inherits:
+#  - user
+#  - helpdesk
+#  permissions:
+#  - uou
+#  - cu
+#  - uusd
+#  - dou
+
+#services_auth_keys:
+#- name: service_name
+#  key: auth_key_goes_here
+#  permissions:
+#  - rou
+#  - rusd
+#  - uou
+#  - cu
+#  - uusd
+#  - dou
+
