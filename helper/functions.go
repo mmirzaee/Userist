@@ -1,6 +1,6 @@
 package helper
 
-// Remove Duplicated items in a slice
+// RemoveDuplicates - Remove Duplicated items in a slice
 func RemoveDuplicates(xs *[]string) {
 	found := make(map[string]bool)
 	j := 0

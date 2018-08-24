@@ -9,7 +9,7 @@ import (
 GORM (table) types
 */
 
-// user structure
+// User - user structure
 type User struct {
 	gorm.Model
 	Username        string `gorm:"type:varchar(32);unique_index;not null"`
@@ -21,7 +21,7 @@ type User struct {
 	UserTenantRoles []UserTenantRole
 }
 
-// return user data in a safe way
+// Safe - return user data in a safe way
 func (user *User) Safe() map[string]interface{} {
 	roles := make(map[int]string)
 
@@ -43,7 +43,7 @@ func (user *User) Safe() map[string]interface{} {
 	}
 }
 
-// user meta structure
+// UserMeta - user meta structure
 type UserMeta struct {
 	ID        uint   `gorm:"primary_key"`
 	UserID    uint   `gorm:"index;not null"`
@@ -51,14 +51,14 @@ type UserMeta struct {
 	MetaValue string `gorm:"type:longtext;not null"`
 }
 
-// tenant structure
+// Tenant - tenant structure
 type Tenant struct {
 	ID     uint   `gorm:"primary_key"`
 	Name   string `gorm:"type:varchar(32);not null"`
 	Status int    `gorm:"type:int(1);not null;index"`
 }
 
-// user tenant role structure
+// UserTenantRole - user tenant role structure
 type UserTenantRole struct {
 	gorm.Model
 	UserID              uint   `gorm:"index;not null"`
@@ -72,25 +72,25 @@ type UserTenantRole struct {
 Internal types
 */
 
-// permission structure
+// Permission - permission structure
 type Permission struct {
 	Id    string
 	Title string
 }
 
-// role structure
+// Role - role structure
 type Role struct {
 	Name        string
 	Permissions []string
 }
 
-// response type of a role
+// RolesResponse - response type of a role
 type RolesResponse struct {
 	Roles       []Role
 	Permissions []Permission
 }
 
-// fields for filtering a user
+// UsersFilterFields - fields for filtering a user
 type UsersFilterFields struct {
 	Username    string
 	Email       string
@@ -104,7 +104,7 @@ type UsersFilterFields struct {
 	Order       string
 }
 
-// user data + role data
+// UserWithRole - user data + role data
 type UserWithRole struct {
 	ID          uint
 	CreatedAt   time.Time

@@ -15,7 +15,7 @@ import (
 
 var db *gorm.DB
 
-// initials connection to db and do migrations and seeds admin and tenant data
+// Init - initials connection to db and do migrations and seeds admin and tenant data
 func Init() {
 	mysqlConfig := viper.GetStringMap("mysql")
 	logConfig := viper.GetStringMap("log")
@@ -66,7 +66,7 @@ func Init() {
 	}
 }
 
-// returns roles that are declared hardcoded and added in config
+// Roles - returns roles that are declared hardcoded and added in config
 func Roles() RolesResponse {
 	var perms []Permission
 
@@ -137,7 +137,7 @@ func Roles() RolesResponse {
 	return RolesResponse{Permissions: perms, Roles: roles}
 }
 
-// get user data by username
+// GetUserByUsername - get user data by username
 func GetUserByUsername(username string) (*User, error) {
 	var user User
 	if err := db.Preload("UserMetas").Preload("UserTenantRoles").Where(User{Username: username}).First(&user).Error; err != nil {
@@ -146,7 +146,7 @@ func GetUserByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
-// get user data by user ID
+// GetUserByID - get user data by user ID
 func GetUserByID(id uint) (*User, error) {
 	var user User
 	if err := db.Preload("UserMetas").Preload("UserTenantRoles").First(&user, id).Error; err != nil {
@@ -155,7 +155,7 @@ func GetUserByID(id uint) (*User, error) {
 	return &user, nil
 }
 
-// get user permissions in tenants
+// GetUserTenantsPermissions - get user permissions in tenants
 func GetUserTenantsPermissions(roles []UserTenantRole) map[int][]string {
 	result := make(map[int][]string)
 	r := Roles()
@@ -201,7 +201,7 @@ func GetUserTenantsPermissions(roles []UserTenantRole) map[int][]string {
 	return result
 }
 
-// get tenants thst user has role in
+// GetUserTenants - get tenants thst user has role in
 func GetUserTenants(userID uint) map[uint]string {
 	var userTenantRoles []UserTenantRole
 	var tenantIds []uint
@@ -223,7 +223,7 @@ func GetUserTenants(userID uint) map[uint]string {
 	return tenantsFormatted
 }
 
-// get all tenants
+// GetTenants - get all tenants
 func GetTenants() map[uint]string {
 	var tenants []Tenant
 
@@ -237,7 +237,7 @@ func GetTenants() map[uint]string {
 	return tenantsFormatted
 }
 
-// create a new tenant
+// CreateTenant - create a new tenant
 func CreateTenant(name string, status int) Tenant {
 	var newTenant = Tenant{
 		Name:   name,
@@ -248,7 +248,7 @@ func CreateTenant(name string, status int) Tenant {
 	return newTenant
 }
 
-// update single tenant
+// UpdateTenant - update single tenant
 func UpdateTenant(tenantID uint, updatedTenant *Tenant) {
 	var tenant Tenant
 	db.First(&tenant, tenantID)
@@ -264,13 +264,13 @@ func UpdateTenant(tenantID uint, updatedTenant *Tenant) {
 	db.Save(&tenant)
 }
 
-// delete a tenant
+// DeleteTenant - delete a tenant
 func DeleteTenant(tenantID uint) {
 	db.Unscoped().Where("id = ?", tenantID).Delete(&Tenant{})
 	db.Unscoped().Where("tenant_id = ?", tenantID).Delete(&UserTenantRole{})
 }
 
-// get users by filters
+// GetUsers - get users by filters
 func GetUsers(args UsersFilterFields, tenantID int) []UserWithRole {
 	tx := db.Table("users").Select("users.id, COALESCE(display_name, '') as display_name, COALESCE(email, '') as email, username, users.created_at, users.updated_at, status, COALESCE(user_tenant_roles.role, '') as role")
 	tx = tx.Joins("LEFT JOIN user_tenant_roles on user_tenant_roles.user_id=users.id")
@@ -322,7 +322,7 @@ func GetUsers(args UsersFilterFields, tenantID int) []UserWithRole {
 	return usersWithRole
 }
 
-// formats user data
+// FormatUserMeta - formats user data
 func FormatUserMeta(userMeta []UserMeta) map[string]string {
 	um := make(map[string]string)
 	for _, u := range userMeta {
@@ -331,7 +331,7 @@ func FormatUserMeta(userMeta []UserMeta) map[string]string {
 	return um
 }
 
-// create new user
+// CreateUser - create new user
 func CreateUser(user *User) (uint, error) {
 	var newUser = User{
 		Username:    user.Username,
@@ -347,7 +347,7 @@ func CreateUser(user *User) (uint, error) {
 	return newUser.ID, nil
 }
 
-// update user role in a tenant
+// AddOrUpdateTenantRole - update user role in a tenant
 func AddOrUpdateTenantRole(userID uint, tenantID int, role string, includedPermissions string, excludedPermissions string) {
 	var isNewRecord int
 	var t UserTenantRole
@@ -373,7 +373,7 @@ func AddOrUpdateTenantRole(userID uint, tenantID int, role string, includedPermi
 	}
 }
 
-// add/update user meta
+// AddOrUpdateUserMeta - add/update user meta
 func AddOrUpdateUserMeta(userID uint, metaKey string, metaValue string, isUnique bool) error {
 	var um UserMeta
 
@@ -398,7 +398,7 @@ func AddOrUpdateUserMeta(userID uint, metaKey string, metaValue string, isUnique
 	return nil
 }
 
-// check if user has any role in a tenant
+// UserExists - check if user has any role in a tenant
 func UserExists(userId uint, tenantId int) bool {
 	if err := db.Where(&UserTenantRole{UserID: userId, TenantID: uint(tenantId)}).First(&UserTenantRole{}).Error; err != nil {
 		return false
@@ -407,7 +407,7 @@ func UserExists(userId uint, tenantId int) bool {
 	return true
 }
 
-// get user meta
+// GetUserMetaValue - get user meta
 func GetUserMetaValue(userID uint, metaKey string, tenantID int) (string, error) {
 	if !UserExists(userID, tenantID) {
 		return "", errors.New("user with id: " + strconv.Itoa(int(userID)) + " does not exist in tenant: " + strconv.Itoa(tenantID))
@@ -421,7 +421,7 @@ func GetUserMetaValue(userID uint, metaKey string, tenantID int) (string, error)
 	return um.MetaValue, nil
 }
 
-// update a user
+// UpdateUser - update a user
 func UpdateUser(userID uint, updateUser *User) {
 	var user User
 	db.First(&user, userID)
@@ -445,19 +445,19 @@ func UpdateUser(userID uint, updateUser *User) {
 	db.Save(&user)
 }
 
-// permanently delete user data
+// DeleteUser - permanently delete user data
 func DeleteUser(userID uint) {
 	db.Unscoped().Where("id = ?", userID).Delete(&User{})
 	db.Unscoped().Where("user_id = ?", userID).Delete(&UserTenantRole{})
 	db.Unscoped().Where("user_id = ?", userID).Delete(&UserMeta{})
 }
 
-// permanently delete a meta
+// DeleteUserMeta - permanently delete a meta
 func DeleteUserMeta(userID uint, metaKey string) {
 	db.Unscoped().Where("user_id = ?", userID).Where("meta_key = ?", metaKey).Delete(&UserMeta{})
 }
 
-// permanently delete a user role in a tenant
+// DeleteUserTenantRole - permanently delete a user role in a tenant
 func DeleteUserTenantRole(userID uint, tenantID uint) {
 	db.Unscoped().Where("user_id = ?", userID).Where("tenant_id = ?", tenantID).Delete(&UserTenantRole{})
 }

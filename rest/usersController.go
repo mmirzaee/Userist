@@ -5,10 +5,10 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 	"github.com/mmirzaee/userist/models"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
 	"strings"
-	log "github.com/sirupsen/logrus"
 )
 
 func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {

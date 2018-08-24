@@ -4,9 +4,9 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 	"github.com/mmirzaee/userist/models"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
-	log "github.com/sirupsen/logrus"
 )
 
 func getUserTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
@@ -47,7 +47,7 @@ func postTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, te
 	}
 
 	errParse := r.ParseForm()
-	if errParse != nil{
+	if errParse != nil {
 		log.Error(errParse.Error())
 	}
 
@@ -81,7 +81,7 @@ func updateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, t
 	}
 
 	errParse := r.ParseForm()
-	if errParse != nil{
+	if errParse != nil {
 		log.Error(errParse.Error())
 	}
 

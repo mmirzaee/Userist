@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-// initial routes and http server
+// Serve - initial routes and http server
 func Serve() {
 	httpServerConfig := viper.GetStringMap("http_server")
 
