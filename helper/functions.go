@@ -1,6 +1,5 @@
 package helper
 
-
 func RemoveDuplicates(xs *[]string) {
 	found := make(map[string]bool)
 	j := 0

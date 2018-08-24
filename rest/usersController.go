@@ -1,22 +1,22 @@
 package rest
 
 import (
-	"net/http"
-	"github.com/asaskevich/govalidator"
-	"strconv"
-	"github.com/mmirzaee/userist/models"
 	"fmt"
-	"strings"
+	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
+	"github.com/mmirzaee/userist/models"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
-func GetUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 
 	// Check Permission
-	hasReadUsersPermission := HasPermission(&user, "rou", tenantID)
+	hasReadUsersPermission := hasPermission(&user, "rou", tenantID)
 
 	if !hasReadUsersPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -36,19 +36,19 @@ func GetUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenan
 
 	if queryPage != "" {
 		if !govalidator.IsNumeric(queryPage) {
-			JsonHttpRespond(w, nil, "page parameter must be numeric", http.StatusBadRequest)
+			jsonHttpRespond(w, nil, "page parameter must be numeric", http.StatusBadRequest)
 			return
 		} else {
-			pageNo, _ = strconv.Atoi(queryPage);
+			pageNo, _ = strconv.Atoi(queryPage)
 		}
 	}
 
 	if queryStatus != "" {
 		if !govalidator.IsNumeric(queryStatus) {
-			JsonHttpRespond(w, nil, "status parameter must be numeric", http.StatusBadRequest)
+			jsonHttpRespond(w, nil, "status parameter must be numeric", http.StatusBadRequest)
 			return
 		} else {
-			status, _ = strconv.Atoi(queryStatus);
+			status, _ = strconv.Atoi(queryStatus)
 		}
 	}
 
@@ -67,18 +67,18 @@ func GetUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenan
 	}, tenantID)
 
 	if len(Users) > 0 {
-		JsonHttpRespond(w, Users, "", http.StatusOK)
+		jsonHttpRespond(w, Users, "", http.StatusOK)
 	} else {
-		JsonHttpRespond(w, nil, "users not found", http.StatusNotFound)
+		jsonHttpRespond(w, nil, "users not found", http.StatusNotFound)
 	}
 }
 
-func PostUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func postUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 
 	// Check Permission
-	hasCreateUserPermission := HasPermission(&user, "cu", tenantID)
+	hasCreateUserPermission := hasPermission(&user, "cu", tenantID)
 	if !hasCreateUserPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -92,22 +92,22 @@ func PostUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 
 	// Validation
 	if username == "" || password == "" || email == "" || displayName == "" || status == "" {
-		JsonHttpRespond(w, nil, "username, password, email and display_name are required", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "username, password, email and display_name are required", http.StatusBadRequest)
 		return
 	}
 
 	if !govalidator.IsEmail(email) {
-		JsonHttpRespond(w, nil, "email is not valid", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "email is not valid", http.StatusBadRequest)
 		return
 	}
 
 	if !govalidator.IsNumeric(status) {
-		JsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
 		return
 	}
 
 	s, _ := strconv.Atoi(status)
-	hashedPassword, _ := HashPassword(password)
+	hashedPassword, _ := hashPassword(password)
 
 	userId, errCreateUser := models.CreateUser(&models.User{
 		Username:    username,
@@ -118,17 +118,17 @@ func PostUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 	})
 
 	if errCreateUser != nil {
-		JsonHttpRespond(w, nil, errCreateUser.Error(), http.StatusInternalServerError)
+		jsonHttpRespond(w, nil, errCreateUser.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	userRole := "user"
 	if role != "" {
 		roles := models.Roles()
-		roleExists := false;
+		roleExists := false
 		for _, r := range roles.Roles {
 			if r.Name == role {
-				roleExists = true;
+				roleExists = true
 			}
 		}
 
@@ -149,32 +149,32 @@ func PostUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 	newUser, errGetUser := models.GetUserByID(userId)
 
 	if errGetUser != nil {
-		JsonHttpRespond(w, nil, errGetUser.Error(), http.StatusInternalServerError)
+		jsonHttpRespond(w, nil, errGetUser.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	JsonHttpRespond(w, newUser.Safe(), "", http.StatusOK)
+	jsonHttpRespond(w, newUser.Safe(), "", http.StatusOK)
 
 }
 
-func GetSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func getSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	hasReadPermission := false
+	var hasReadPermission bool
 	if uint(userID) == user.User.ID {
-		hasReadPermission = HasPermission(&user, "rsu", tenantID)
+		hasReadPermission = hasPermission(&user, "rsu", tenantID)
 	} else {
-		hasReadPermission = HasPermission(&user, "rou", tenantID)
+		hasReadPermission = hasPermission(&user, "rou", tenantID)
 	}
 
 	if !hasReadPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -183,31 +183,31 @@ func GetSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUs
 	metaValue, errGetUserMeta := models.GetUserMetaValue(uint(userID), metaKey, tenantID)
 
 	if errGetUserMeta != nil {
-		JsonHttpRespond(w, nil, errGetUserMeta.Error(), http.StatusNotFound)
+		jsonHttpRespond(w, nil, errGetUserMeta.Error(), http.StatusNotFound)
 		return
 	}
 
-	JsonHttpRespond(w, metaValue, "", http.StatusOK)
+	jsonHttpRespond(w, metaValue, "", http.StatusOK)
 }
 
-func UpdateSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func updateSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	hasUpdatePermission := false
+	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
-		hasUpdatePermission = HasPermission(&user, "usu", tenantID)
+		hasUpdatePermission = hasPermission(&user, "usu", tenantID)
 	} else {
-		hasUpdatePermission = HasPermission(&user, "uou", tenantID)
+		hasUpdatePermission = hasPermission(&user, "uou", tenantID)
 	}
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -216,39 +216,39 @@ func UpdateSingleUserMeta(w http.ResponseWriter, r *http.Request, user Authorize
 	metaValue := r.Form["value"][0]
 
 	if metaKey == "" {
-		JsonHttpRespond(w, nil, "value is required", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "value is required", http.StatusBadRequest)
 		return
 	}
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user with id: "+strconv.Itoa(userID)+" does not exist in tenant: "+strconv.Itoa(tenantID), http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user with id: "+strconv.Itoa(userID)+" does not exist in tenant: "+strconv.Itoa(tenantID), http.StatusNotFound)
 		return
 	}
 
 	models.AddOrUpdateUserMeta(uint(userID), metaKey, metaValue, false)
 
-	JsonHttpRespond(w, "meta \""+metaKey+"\" has been updated", "", http.StatusOK)
+	jsonHttpRespond(w, "meta \""+metaKey+"\" has been updated", "", http.StatusOK)
 }
 
-func UpdateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func updateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	hasUpdatePermission := false
+	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
-		hasUpdatePermission = HasPermission(&user, "usu", tenantID)
+		hasUpdatePermission = hasPermission(&user, "usu", tenantID)
 	} else {
-		hasUpdatePermission = HasPermission(&user, "uou", tenantID)
+		hasUpdatePermission = hasPermission(&user, "uou", tenantID)
 	}
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -257,37 +257,37 @@ func UpdateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user Aut
 	metaValue := r.Form["value"][0]
 
 	if metaKey == "" {
-		JsonHttpRespond(w, nil, "value is required", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "value is required", http.StatusBadRequest)
 		return
 	}
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user with id: "+strconv.Itoa(userID)+" does not exist in tenant: "+strconv.Itoa(tenantID), http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user with id: "+strconv.Itoa(userID)+" does not exist in tenant: "+strconv.Itoa(tenantID), http.StatusNotFound)
 		return
 	}
 
 	if errUpdateUserMeta := models.AddOrUpdateUserMeta(uint(userID), metaKey, metaValue, true); errUpdateUserMeta != nil {
-		JsonHttpRespond(w, nil, errUpdateUserMeta.Error(), http.StatusInternalServerError)
-		return;
+		jsonHttpRespond(w, nil, errUpdateUserMeta.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	JsonHttpRespond(w, "meta \""+metaKey+"\" has been updated", "", http.StatusOK)
+	jsonHttpRespond(w, "meta \""+metaKey+"\" has been updated", "", http.StatusOK)
 }
 
-func UpdateUserPermissions(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func updateUserPermissions(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	hasUpdatePermission := HasPermission(&user, "uou", tenantID) && HasPermission(&user, "uusd", tenantID)
+	hasUpdatePermission := hasPermission(&user, "uou", tenantID) && hasPermission(&user, "uusd", tenantID)
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -297,7 +297,7 @@ func UpdateUserPermissions(w http.ResponseWriter, r *http.Request, user Authoriz
 	newRole, newRoleExists := r.Form["role"]
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user with id: "+strconv.Itoa(userID)+" does not exist in tenant: "+strconv.Itoa(tenantID), http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user with id: "+strconv.Itoa(userID)+" does not exist in tenant: "+strconv.Itoa(tenantID), http.StatusNotFound)
 		return
 	}
 
@@ -305,7 +305,7 @@ func UpdateUserPermissions(w http.ResponseWriter, r *http.Request, user Authoriz
 
 	userRole := "user"
 	for _, role := range updatingUser.UserTenantRoles {
-		if (int(role.TenantID) == tenantID) {
+		if int(role.TenantID) == tenantID {
 			userRole = role.Role
 			break
 		}
@@ -313,10 +313,10 @@ func UpdateUserPermissions(w http.ResponseWriter, r *http.Request, user Authoriz
 
 	if newRoleExists {
 		roles := models.Roles()
-		roleExists := false;
+		roleExists := false
 		for _, r := range roles.Roles {
 			if r.Name == newRole[0] {
-				roleExists = true;
+				roleExists = true
 			}
 		}
 
@@ -337,34 +337,34 @@ func UpdateUserPermissions(w http.ResponseWriter, r *http.Request, user Authoriz
 
 	models.AddOrUpdateTenantRole(uint(userID), tenantID, userRole, finalInclude, finalExclude)
 
-	JsonHttpRespond(w, "user permission has been updated", "", http.StatusOK)
+	jsonHttpRespond(w, "user permission has been updated", "", http.StatusOK)
 }
 
-func GetSingleUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func getSingleUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	hasReadPermission := false
+	var hasReadPermission bool
 
 	if uint(userID) == user.User.ID {
-		hasReadPermission = HasPermission(&user, "rsu", tenantID)
+		hasReadPermission = hasPermission(&user, "rsu", tenantID)
 	} else {
-		hasReadPermission = HasPermission(&user, "rou", tenantID)
+		hasReadPermission = hasPermission(&user, "rou", tenantID)
 	}
 
 	if !hasReadPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	queriedUser, err := models.GetUserByID(uint(userID))
 	if err != nil {
-		JsonHttpRespond(w, nil, "user not found with id:"+strconv.Itoa(userID), http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user not found with id:"+strconv.Itoa(userID), http.StatusNotFound)
 		return
 	}
 
@@ -377,28 +377,28 @@ func GetSingleUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, 
 	}
 
 	if isInCurrentTenant {
-		JsonHttpRespond(w, queriedUser.Safe(), "", http.StatusOK)
+		jsonHttpRespond(w, queriedUser.Safe(), "", http.StatusOK)
 	} else {
-		JsonHttpRespond(w, nil, "user not found in tenant:"+strconv.Itoa(tenantID), http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user not found in tenant:"+strconv.Itoa(tenantID), http.StatusNotFound)
 	}
 }
 
-func PostUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func postUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
 	r.ParseForm()
 
-	hasUpdatePermission := false
+	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
-		hasUpdatePermission = HasPermission(&user, "usu", tenantID)
+		hasUpdatePermission = hasPermission(&user, "usu", tenantID)
 	} else {
-		hasUpdatePermission = HasPermission(&user, "uou", tenantID)
+		hasUpdatePermission = hasPermission(&user, "uou", tenantID)
 	}
 
 	password := r.Form["password"][0]
@@ -408,7 +408,7 @@ func PostUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 	role := r.Form["role"][0]
 
 	updatesMetaData := false
-	for key, _ := range r.Form {
+	for key := range r.Form {
 		if strings.HasPrefix(key, "meta_") || strings.HasPrefix(key, "umeta_") {
 			updatesMetaData = true
 			break
@@ -416,32 +416,32 @@ func PostUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 	}
 
 	if updatesMetaData || role != "" || status != "" {
-		hasUpdatePermission = hasUpdatePermission && HasPermission(&user, "uusd", tenantID)
+		hasUpdatePermission = hasUpdatePermission && hasPermission(&user, "uusd", tenantID)
 	}
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
 		return
 	}
 
 	if email != "" && !govalidator.IsEmail(email) {
-		JsonHttpRespond(w, nil, "email is not valid", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "email is not valid", http.StatusBadRequest)
 		return
 	}
 
 	if status != "" && !govalidator.IsNumeric(status) {
-		JsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
 		return
 	}
 
 	finalPassword := ""
 	if password != "" {
-		hashedPassword, _ := HashPassword(password)
+		hashedPassword, _ := hashPassword(password)
 		finalPassword = hashedPassword
 	}
 
@@ -461,10 +461,10 @@ func PostUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 	userRole := ""
 	if role != "" {
 		roles := models.Roles()
-		roleExists := false;
+		roleExists := false
 		for _, r := range roles.Roles {
 			if r.Name == role {
-				roleExists = true;
+				roleExists = true
 			}
 		}
 
@@ -487,104 +487,104 @@ func PostUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 
 	newUser, errGetUser := models.GetUserByID(uint(userID))
 	if errGetUser != nil {
-		JsonHttpRespond(w, nil, errGetUser.Error(), http.StatusInternalServerError)
+		jsonHttpRespond(w, nil, errGetUser.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	JsonHttpRespond(w, newUser.Safe(), "", http.StatusOK)
+	jsonHttpRespond(w, newUser.Safe(), "", http.StatusOK)
 }
 
-func DeleteUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func deleteUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
 	r.ParseForm()
 
-	hasUpdatePermission := HasPermission(&user, "uusd", tenantID)
+	hasUpdatePermission := hasPermission(&user, "uusd", tenantID)
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
 		return
 	}
 
 	models.DeleteUser(uint(userID))
 
-	JsonHttpRespond(w, "user deleted", "", http.StatusOK)
+	jsonHttpRespond(w, "user deleted", "", http.StatusOK)
 }
 
-func DeleteUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func deleteUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
 	r.ParseForm()
 	metaKey, _ := mux.Vars(r)["key"]
 
-	hasUpdatePermission := false
+	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
-		hasUpdatePermission = HasPermission(&user, "usu", tenantID)
+		hasUpdatePermission = hasPermission(&user, "usu", tenantID)
 	} else {
-		hasUpdatePermission = HasPermission(&user, "uou", tenantID)
+		hasUpdatePermission = hasPermission(&user, "uou", tenantID)
 	}
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
 		return
 	}
 
 	models.DeleteUserMeta(uint(userID), metaKey)
 
-	JsonHttpRespond(w, "user meta deleted", "", http.StatusOK)
+	jsonHttpRespond(w, "user meta deleted", "", http.StatusOK)
 }
 
-func DeleteUserTenantRole(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func deleteUserTenantRole(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
 	r.ParseForm()
 
-	hasUpdatePermission := false
+	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
-		hasUpdatePermission = HasPermission(&user, "usu", tenantID)
+		hasUpdatePermission = hasPermission(&user, "usu", tenantID)
 	} else {
-		hasUpdatePermission = HasPermission(&user, "uou", tenantID)
+		hasUpdatePermission = hasPermission(&user, "uou", tenantID)
 	}
 
 	if !hasUpdatePermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	if !models.UserExists(uint(userID), tenantID) {
-		JsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
+		jsonHttpRespond(w, nil, "user not found", http.StatusNotFound)
 		return
 	}
 
 	models.DeleteUserTenantRole(uint(userID), uint(tenantID))
 
-	JsonHttpRespond(w, "user permissions deleted", "", http.StatusOK)
+	jsonHttpRespond(w, "user permissions deleted", "", http.StatusOK)
 }

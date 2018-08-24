@@ -1,10 +1,10 @@
 package rest
 
 import (
-	"net/http"
 	"github.com/mmirzaee/userist/models"
+	"net/http"
 )
 
-func GetRoles(w http.ResponseWriter, r *http.Request, _ AuthorizedUser, _ int) {
-	JsonHttpRespond(w, models.Roles(), "", http.StatusOK)
+func getRoles(w http.ResponseWriter, r *http.Request, _ AuthorizedUser, _ int) {
+	jsonHttpRespond(w, models.Roles(), "", http.StatusOK)
 }

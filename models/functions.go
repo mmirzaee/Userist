@@ -1,16 +1,16 @@
 package models
 
 import (
+	"errors"
+	"fmt"
+	"github.com/jinzhu/gorm"
+	"github.com/mitchellh/mapstructure"
+	"github.com/mmirzaee/userist/helper"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/jinzhu/gorm"
-	"strings"
-	"github.com/mitchellh/mapstructure"
-	"fmt"
-	"github.com/mmirzaee/userist/helper"
-	"errors"
-	"strconv"
 	"golang.org/x/crypto/bcrypt"
+	"strconv"
+	"strings"
 )
 
 var db *gorm.DB
@@ -107,12 +107,12 @@ func Roles() RolesResponse {
 	if viper.IsSet("roles") {
 		rolesConfig := viper.Get("roles").([]interface{})
 		for _, val := range rolesConfig {
-			r := val.(map[interface{}]interface{});
+			r := val.(map[interface{}]interface{})
 			inherits := r["inherits"].([]interface{})
 			var rolePerms = []string{}
 			for _, parent := range inherits {
 				for _, val2 := range rolesConfig {
-					r2 := val2.(map[interface{}]interface{});
+					r2 := val2.(map[interface{}]interface{})
 					if r2["name"] == parent.(string) {
 						for _, permissions := range r2["permissions"].([]interface{}) {
 							rolePerms = append(rolePerms, permissions.(string))
@@ -179,13 +179,13 @@ func GetUserTenantsPermissions(roles []UserTenantRole) map[int][]string {
 				if tenantRole.IncludedPermissions != "" {
 					includedPermissions := strings.Split(tenantRole.IncludedPermissions, ",")
 					for _, includedPerm := range includedPermissions {
-						permAlreadyIncluded := false;
+						permAlreadyIncluded := false
 						for _, selectedPerm := range result[int(tenantRole.ID)] {
 							if selectedPerm == includedPerm {
-								permAlreadyIncluded = true;
+								permAlreadyIncluded = true
 							}
 						}
-						if (!permAlreadyIncluded) {
+						if !permAlreadyIncluded {
 							result[int(tenantRole.TenantID)] = append(result[int(tenantRole.ID)], includedPerm)
 						}
 					}
@@ -193,7 +193,7 @@ func GetUserTenantsPermissions(roles []UserTenantRole) map[int][]string {
 			}
 		}
 	}
-	return result;
+	return result
 }
 
 func GetUserTenants(userID uint) map[uint]string {
@@ -314,7 +314,7 @@ func GetUsers(args UsersFilterFields, tenantID int) []UserWithRole {
 func FormatUserMeta(userMeta []UserMeta) map[string]string {
 	um := make(map[string]string)
 	for _, u := range userMeta {
-		um[u.MetaKey] = u.MetaValue;
+		um[u.MetaKey] = u.MetaValue
 	}
 	return um
 }

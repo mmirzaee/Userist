@@ -1,11 +1,11 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/mmirzaee/userist/models"
 	"github.com/mmirzaee/userist/rest"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 func init() {

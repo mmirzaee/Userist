@@ -1,47 +1,47 @@
 package rest
 
 import (
-	"net/http"
-	"github.com/mmirzaee/userist/models"
-	"github.com/gorilla/mux"
 	"github.com/asaskevich/govalidator"
+	"github.com/gorilla/mux"
+	"github.com/mmirzaee/userist/models"
+	"net/http"
 	"strconv"
 )
 
-func GetUserTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+func getUserTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	uid, _ := mux.Vars(r)["id"]
 	userID, errBadTenantID := strconv.Atoi(uid)
 	if errBadTenantID != nil || !govalidator.IsNumeric(uid) {
-		JsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	hasReadPermission := false
+	var hasReadPermission bool
 	if uint(userID) == user.User.ID {
-		hasReadPermission = HasPermission(&user, "rsu", tenantID)
+		hasReadPermission = hasPermission(&user, "rsu", tenantID)
 	} else {
-		hasReadPermission = HasPermission(&user, "rou", tenantID)
+		hasReadPermission = hasPermission(&user, "rou", tenantID)
 	}
 
 	if !hasReadPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	tenants := models.GetUserTenants(uint(userID))
-	JsonHttpRespond(w, tenants, "", http.StatusOK)
+	jsonHttpRespond(w, tenants, "", http.StatusOK)
 }
 
-func GetTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, _ int) {
+func getTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, _ int) {
 	tenants := models.GetTenants()
-	JsonHttpRespond(w, tenants, "", http.StatusOK)
+	jsonHttpRespond(w, tenants, "", http.StatusOK)
 }
 
-func PostTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
-	hasCreateTenantPermission := HasPermission(&user, "ct", tenantID)
+func postTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+	hasCreateTenantPermission := hasPermission(&user, "ct", tenantID)
 
 	if !hasCreateTenantPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
@@ -50,28 +50,28 @@ func PostTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, te
 	status := r.Form["status"][0]
 
 	if !govalidator.IsNumeric(status) {
-		JsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
 		return
 	}
 
 	s, _ := strconv.Atoi(status)
 
 	tenant := models.CreateTenant(name, s)
-	JsonHttpRespond(w, tenant, "", http.StatusOK)
+	jsonHttpRespond(w, tenant, "", http.StatusOK)
 }
 
-func UpdateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
-	hasCreateTenantPermission := HasPermission(&user, "ut", tenantID)
+func updateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+	hasCreateTenantPermission := hasPermission(&user, "ut", tenantID)
 
 	if !hasCreateTenantPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	tid, _ := mux.Vars(r)["id"]
 	updatingTenantID, errBadTenantID := strconv.Atoi(tid)
 	if errBadTenantID != nil {
-		JsonHttpRespond(w, nil, "tenant_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "tenant_id is invalid", http.StatusForbidden)
 		return
 	}
 
@@ -80,7 +80,7 @@ func UpdateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, t
 	status := r.Form["status"][0]
 
 	if !govalidator.IsNumeric(status) {
-		JsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
+		jsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
 		return
 	}
 
@@ -91,25 +91,25 @@ func UpdateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, t
 		Status: s,
 	})
 
-	JsonHttpRespond(w, "tenant updated successfully", "", http.StatusOK)
+	jsonHttpRespond(w, "tenant updated successfully", "", http.StatusOK)
 }
 
-func DeleteTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
-	hasCreateTenantPermission := HasPermission(&user, "dt", tenantID)
+func deleteTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
+	hasCreateTenantPermission := hasPermission(&user, "dt", tenantID)
 
 	if !hasCreateTenantPermission {
-		JsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "you dont have permission", http.StatusForbidden)
 		return
 	}
 
 	tid, _ := mux.Vars(r)["id"]
 	deletingTenantID, errBadTenantID := strconv.Atoi(tid)
 	if errBadTenantID != nil {
-		JsonHttpRespond(w, nil, "tenant_id is invalid", http.StatusForbidden)
+		jsonHttpRespond(w, nil, "tenant_id is invalid", http.StatusForbidden)
 		return
 	}
 
 	models.DeleteTenant(uint(deletingTenantID))
 
-	JsonHttpRespond(w, "tenant deleted successfully", "", http.StatusOK)
+	jsonHttpRespond(w, "tenant deleted successfully", "", http.StatusOK)
 }

@@ -1,28 +1,28 @@
 package rest
 
 import (
-	"github.com/gorilla/mux"
-	"github.com/gorilla/handlers"
-	"github.com/spf13/viper"
-	log "github.com/sirupsen/logrus"
-	"net/http"
-	"time"
-	"strconv"
 	"encoding/json"
-	"github.com/dgrijalva/jwt-go"
-	"golang.org/x/crypto/bcrypt"
-	"strings"
 	"errors"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 	"github.com/mmirzaee/userist/models"
-	"os"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"golang.org/x/crypto/bcrypt"
+	"net/http"
 	"net/http/httputil"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func Serve() {
 	httpServerConfig := viper.GetStringMap("http_server")
 
 	r := mux.NewRouter()
-	SetRoutes(r);
+	setRoutes(r)
 	r.Handle("/auth/login", handlers.LoggingHandler(os.Stdout, http.DefaultServeMux))
 	srv := &http.Server{
 		Handler: handlers.CORS(
@@ -42,16 +42,16 @@ func Serve() {
 
 func interceptor(f func(http.ResponseWriter, *http.Request, AuthorizedUser, int), checkAuth bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		AddDefaultHeaders(w)
+		addDefaultHeaders(w)
 
 		u := AuthorizedUser{}
 		t := 0
 
 		// Check Auth
 		if checkAuth {
-			user, err := CheckAuth(r)
+			user, err := checkAuthentication(r)
 			if err != nil {
-				JsonHttpRespond(w, nil, err.Error(), http.StatusUnauthorized)
+				jsonHttpRespond(w, nil, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			u = user
@@ -59,7 +59,7 @@ func interceptor(f func(http.ResponseWriter, *http.Request, AuthorizedUser, int)
 			// Check tenant
 			tenantID, errBadTenantID := strconv.Atoi(r.Header.Get("x-tenant-id"))
 			if errBadTenantID != nil || tenantID <= 0 {
-				JsonHttpRespond(w, nil, "x-tenant-id header is not set", http.StatusForbidden)
+				jsonHttpRespond(w, nil, "x-tenant-id header is not set", http.StatusForbidden)
 				return
 			}
 			t = tenantID
@@ -80,31 +80,31 @@ func interceptor(f func(http.ResponseWriter, *http.Request, AuthorizedUser, int)
 	})
 }
 
-func SetRoutes(r *mux.Router) {
-	r.Handle("/roles", interceptor(GetRoles, true)).Methods("GET")
-	r.Handle("/tenants", interceptor(GetTenants, true)).Methods("GET")
-	r.Handle("/tenants", interceptor(PostTenants, true)).Methods("POST")
-	r.Handle("/tenants/{id}", interceptor(UpdateTenant, true)).Methods("POST")
-	r.Handle("/tenants/{id}", interceptor(DeleteTenant, true)).Methods("DELETE")
-	r.Handle("/auth/login", interceptor(PostAuthLogin, false)).Methods("POST")
-	r.Handle("/auth/refresh-token", interceptor(PostRefreshToken, true)).Methods("POST")
-	r.Handle("/auth/check-token", interceptor(PostAuthCheckToken, true)).Methods("POST")
-	r.Handle("/users", interceptor(PostUsers, true)).Methods("POST")
-	r.Handle("/users/{id}", interceptor(PostUpdateUser, true)).Methods("POST")
-	r.Handle("/users", interceptor(GetUsers, true)).Methods("GET")
-	r.Handle("/users/{id}", interceptor(GetSingleUser, true)).Methods("GET")
-	r.Handle("/users/{id}/meta/{key}", interceptor(GetSingleUserMeta, true)).Methods("GET")
-	r.Handle("/users/{id}/umeta/{key}", interceptor(GetSingleUserMeta, true)).Methods("GET")
-	r.Handle("/users/{id}/meta/{key}", interceptor(UpdateSingleUserMeta, true)).Methods("POST")
-	r.Handle("/users/{id}/umeta/{key}", interceptor(UpdateSingleUniqueUserMeta, true)).Methods("POST")
-	r.Handle("/users/{id}/permissions", interceptor(UpdateUserPermissions, true)).Methods("POST")
-	r.Handle("/users/{id}/tenants", interceptor(GetUserTenants, true)).Methods("GET")
-	r.Handle("/users/{id}", interceptor(DeleteUser, true)).Methods("DELETE")
-	r.Handle("/users/{id}/meta/{key}", interceptor(DeleteUserMeta, true)).Methods("DELETE")
-	r.Handle("/users/{id}/permissions", interceptor(DeleteUserTenantRole, true)).Methods("DELETE")
+func setRoutes(r *mux.Router) {
+	r.Handle("/roles", interceptor(getRoles, true)).Methods("GET")
+	r.Handle("/tenants", interceptor(getTenants, true)).Methods("GET")
+	r.Handle("/tenants", interceptor(postTenants, true)).Methods("POST")
+	r.Handle("/tenants/{id}", interceptor(updateTenant, true)).Methods("POST")
+	r.Handle("/tenants/{id}", interceptor(deleteTenant, true)).Methods("DELETE")
+	r.Handle("/auth/login", interceptor(postAuthLogin, false)).Methods("POST")
+	r.Handle("/auth/refresh-token", interceptor(postRefreshToken, true)).Methods("POST")
+	r.Handle("/auth/check-token", interceptor(postAuthCheckToken, true)).Methods("POST")
+	r.Handle("/users", interceptor(postUsers, true)).Methods("POST")
+	r.Handle("/users/{id}", interceptor(postUpdateUser, true)).Methods("POST")
+	r.Handle("/users", interceptor(getUsers, true)).Methods("GET")
+	r.Handle("/users/{id}", interceptor(getSingleUser, true)).Methods("GET")
+	r.Handle("/users/{id}/meta/{key}", interceptor(getSingleUserMeta, true)).Methods("GET")
+	r.Handle("/users/{id}/umeta/{key}", interceptor(getSingleUserMeta, true)).Methods("GET")
+	r.Handle("/users/{id}/meta/{key}", interceptor(updateSingleUserMeta, true)).Methods("POST")
+	r.Handle("/users/{id}/umeta/{key}", interceptor(updateSingleUniqueUserMeta, true)).Methods("POST")
+	r.Handle("/users/{id}/permissions", interceptor(updateUserPermissions, true)).Methods("POST")
+	r.Handle("/users/{id}/tenants", interceptor(getUserTenants, true)).Methods("GET")
+	r.Handle("/users/{id}", interceptor(deleteUser, true)).Methods("DELETE")
+	r.Handle("/users/{id}/meta/{key}", interceptor(deleteUserMeta, true)).Methods("DELETE")
+	r.Handle("/users/{id}/permissions", interceptor(deleteUserTenantRole, true)).Methods("DELETE")
 }
 
-func GenerateToken(user_data TokenData) string {
+func generateToken(user_data TokenData) string {
 	jwtConfig := viper.GetStringMap("jwt")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"uid": user_data.UserId,
@@ -124,12 +124,12 @@ func GenerateToken(user_data TokenData) string {
 	return tokenString
 }
 
-func HashPassword(password string) (string, error) {
+func hashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
-func CheckPasswordHash(password, hash string) bool {
+func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err != nil {
 		log.Error(err)
@@ -137,11 +137,11 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func HasPermission(user *AuthorizedUser, permission string, tenant_id int) bool {
+func hasPermission(user *AuthorizedUser, permission string, tenant_id int) bool {
 	hasPerm := false
 	if user.Type == "user" {
 		tenants := user.Permissions.(map[string]interface{})
-		tenant, tenantExists := tenants[strconv.Itoa(tenant_id)];
+		tenant, tenantExists := tenants[strconv.Itoa(tenant_id)]
 		if tenantExists {
 			for _, perm := range tenant.([]interface{}) {
 				if perm == permission {
@@ -159,7 +159,7 @@ func HasPermission(user *AuthorizedUser, permission string, tenant_id int) bool 
 	return hasPerm
 }
 
-func JsonHttpRespond(w http.ResponseWriter, respond interface{}, error string, status int) {
+func jsonHttpRespond(w http.ResponseWriter, respond interface{}, error string, status int) {
 	w.WriteHeader(status)
 
 	logConfig := viper.GetStringMap("log")
@@ -182,12 +182,12 @@ func JsonHttpRespond(w http.ResponseWriter, respond interface{}, error string, s
 	return
 }
 
-func AddDefaultHeaders(w http.ResponseWriter) {
+func addDefaultHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 }
 
-func CheckAuth(r *http.Request) (AuthorizedUser, error) {
+func checkAuthentication(r *http.Request) (AuthorizedUser, error) {
 	authHeader := r.Header.Get("Authorization")
 	if strings.Contains(authHeader, "Bearer") {
 		authHeader = strings.Replace(authHeader, "Bearer", "", -1)

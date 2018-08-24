@@ -7,7 +7,7 @@ import (
 
 /*
 GORM (table) types
- */
+*/
 type User struct {
 	gorm.Model
 	Username        string `gorm:"type:varchar(32);unique_index;not null"`
@@ -18,7 +18,6 @@ type User struct {
 	UserMetas       []UserMeta
 	UserTenantRoles []UserTenantRole
 }
-
 
 func (user *User) Safe() map[string]interface{} {
 	roles := make(map[int]string)
@@ -65,7 +64,7 @@ type UserTenantRole struct {
 
 /*
 Internal types
- */
+*/
 type Permission struct {
 	Id    string
 	Title string
