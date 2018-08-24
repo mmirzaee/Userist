@@ -6,10 +6,11 @@ import (
 	"github.com/mmirzaee/userist/models"
 	"net/http"
 	"strconv"
+	log "github.com/sirupsen/logrus"
 )
 
 func getUserTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadTenantID := strconv.Atoi(uid)
 	if errBadTenantID != nil || !govalidator.IsNumeric(uid) {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
@@ -45,7 +46,11 @@ func postTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, te
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil{
+		log.Error(errParse.Error())
+	}
+
 	name := r.Form["name"][0]
 	status := r.Form["status"][0]
 
@@ -68,14 +73,18 @@ func updateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, t
 		return
 	}
 
-	tid, _ := mux.Vars(r)["id"]
+	tid := mux.Vars(r)["id"]
 	updatingTenantID, errBadTenantID := strconv.Atoi(tid)
 	if errBadTenantID != nil {
 		jsonHttpRespond(w, nil, "tenant_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil{
+		log.Error(errParse.Error())
+	}
+
 	name := r.Form["name"][0]
 	status := r.Form["status"][0]
 
@@ -102,7 +111,7 @@ func deleteTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, t
 		return
 	}
 
-	tid, _ := mux.Vars(r)["id"]
+	tid := mux.Vars(r)["id"]
 	deletingTenantID, errBadTenantID := strconv.Atoi(tid)
 	if errBadTenantID != nil {
 		jsonHttpRespond(w, nil, "tenant_id is invalid", http.StatusForbidden)

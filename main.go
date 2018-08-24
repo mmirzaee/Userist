@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	InitConfig()
+	initConfig()
 	models.Init()
 }
 
@@ -18,7 +18,7 @@ func main() {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func InitConfig() {
+func initConfig() {
 
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")

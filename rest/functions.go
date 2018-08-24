@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// initial routes and http server
 func Serve() {
 	httpServerConfig := viper.GetStringMap("http_server")
 
@@ -104,11 +105,11 @@ func setRoutes(r *mux.Router) {
 	r.Handle("/users/{id}/permissions", interceptor(deleteUserTenantRole, true)).Methods("DELETE")
 }
 
-func generateToken(user_data TokenData) string {
+func generateToken(userData TokenData) string {
 	jwtConfig := viper.GetStringMap("jwt")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"uid": user_data.UserId,
-		"pms": user_data.Roles,
+		"uid": userData.UserId,
+		"pms": userData.Roles,
 		"exp": time.Now().Add(time.Duration(jwtConfig["lifetime"].(int)) * time.Second).Unix(),
 		"iat": time.Now().Unix(),
 	})
@@ -137,11 +138,11 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func hasPermission(user *AuthorizedUser, permission string, tenant_id int) bool {
+func hasPermission(user *AuthorizedUser, permission string, tenantID int) bool {
 	hasPerm := false
 	if user.Type == "user" {
 		tenants := user.Permissions.(map[string]interface{})
-		tenant, tenantExists := tenants[strconv.Itoa(tenant_id)]
+		tenant, tenantExists := tenants[strconv.Itoa(tenantID)]
 		if tenantExists {
 			for _, perm := range tenant.([]interface{}) {
 				if perm == permission {
@@ -175,11 +176,16 @@ func jsonHttpRespond(w http.ResponseWriter, respond interface{}, error string, s
 	}
 
 	if error != "" {
-		json.NewEncoder(w).Encode(map[string]string{"error": error})
+		err := json.NewEncoder(w).Encode(map[string]string{"error": error})
+		if err != nil {
+			log.Error(err.Error())
+		}
 		return
 	}
-	json.NewEncoder(w).Encode(respond)
-	return
+	err := json.NewEncoder(w).Encode(respond)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
 
 func addDefaultHeaders(w http.ResponseWriter) {
@@ -220,11 +226,11 @@ func checkAuthentication(r *http.Request) (AuthorizedUser, error) {
 		if viper.IsSet("services_auth_keys") {
 			services := viper.Get("services_auth_keys")
 			for _, s := range services.([]interface{}) {
-				service_key := s.(map[interface{}]interface{})["key"].(string)
-				if authHeader == service_key {
-					service_name := s.(map[interface{}]interface{})["name"].(string)
-					service_perms := s.(map[interface{}]interface{})["permissions"].([]interface{})
-					return AuthorizedUser{User: models.User{DisplayName: service_name, Username: service_name, Status: 1}, Permissions: service_perms, Type: "service"}, nil
+				serviceKey := s.(map[interface{}]interface{})["key"].(string)
+				if authHeader == serviceKey {
+					serviceName := s.(map[interface{}]interface{})["name"].(string)
+					servicePerms := s.(map[interface{}]interface{})["permissions"].([]interface{})
+					return AuthorizedUser{User: models.User{DisplayName: serviceName, Username: serviceName, Status: 1}, Permissions: servicePerms, Type: "service"}, nil
 				}
 			}
 		}

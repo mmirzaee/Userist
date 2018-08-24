@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	log "github.com/sirupsen/logrus"
 )
 
 func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
@@ -38,18 +39,20 @@ func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenan
 		if !govalidator.IsNumeric(queryPage) {
 			jsonHttpRespond(w, nil, "page parameter must be numeric", http.StatusBadRequest)
 			return
-		} else {
-			pageNo, _ = strconv.Atoi(queryPage)
 		}
+
+		pageNo, _ = strconv.Atoi(queryPage)
+
 	}
 
 	if queryStatus != "" {
 		if !govalidator.IsNumeric(queryStatus) {
 			jsonHttpRespond(w, nil, "status parameter must be numeric", http.StatusBadRequest)
 			return
-		} else {
-			status, _ = strconv.Atoi(queryStatus)
 		}
+
+		status, _ = strconv.Atoi(queryStatus)
+
 	}
 
 	fmt.Println(tenantID)
@@ -82,7 +85,11 @@ func postUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
+
 	username := r.Form["username"][0]
 	password := r.Form["password"][0]
 	email := r.Form["email"][0]
@@ -140,9 +147,15 @@ func postUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 
 	for key, val := range r.Form {
 		if strings.HasPrefix(key, "meta_") {
-			models.AddOrUpdateUserMeta(userId, strings.TrimPrefix(key, "meta_"), val[0], false)
+			errUserMeta := models.AddOrUpdateUserMeta(userId, strings.TrimPrefix(key, "meta_"), val[0], false)
+			if errUserMeta != nil {
+				log.Error(errUserMeta.Error())
+			}
 		} else if strings.HasPrefix(key, "umeta_") {
-			models.AddOrUpdateUserMeta(userId, strings.TrimPrefix(key, "umeta_"), val[0], true)
+			errUserMeta := models.AddOrUpdateUserMeta(userId, strings.TrimPrefix(key, "umeta_"), val[0], true)
+			if errUserMeta != nil {
+				log.Error(errUserMeta.Error())
+			}
 		}
 	}
 
@@ -159,7 +172,7 @@ func postUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 
 func getSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
@@ -178,7 +191,7 @@ func getSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUs
 		return
 	}
 
-	metaKey, _ := mux.Vars(r)["key"]
+	metaKey := mux.Vars(r)["key"]
 
 	metaValue, errGetUserMeta := models.GetUserMetaValue(uint(userID), metaKey, tenantID)
 
@@ -192,7 +205,7 @@ func getSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUs
 
 func updateSingleUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
@@ -211,8 +224,12 @@ func updateSingleUserMeta(w http.ResponseWriter, r *http.Request, user Authorize
 		return
 	}
 
-	r.ParseForm()
-	metaKey, _ := mux.Vars(r)["key"]
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
+
+	metaKey := mux.Vars(r)["key"]
 	metaValue := r.Form["value"][0]
 
 	if metaKey == "" {
@@ -225,7 +242,10 @@ func updateSingleUserMeta(w http.ResponseWriter, r *http.Request, user Authorize
 		return
 	}
 
-	models.AddOrUpdateUserMeta(uint(userID), metaKey, metaValue, false)
+	errUserMeta := models.AddOrUpdateUserMeta(uint(userID), metaKey, metaValue, false)
+	if errUserMeta != nil {
+		log.Error(errUserMeta.Error())
+	}
 
 	jsonHttpRespond(w, "meta \""+metaKey+"\" has been updated", "", http.StatusOK)
 }
@@ -233,7 +253,7 @@ func updateSingleUserMeta(w http.ResponseWriter, r *http.Request, user Authorize
 func updateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
@@ -252,8 +272,12 @@ func updateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user Aut
 		return
 	}
 
-	r.ParseForm()
-	metaKey, _ := mux.Vars(r)["key"]
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
+
+	metaKey := mux.Vars(r)["key"]
 	metaValue := r.Form["value"][0]
 
 	if metaKey == "" {
@@ -277,7 +301,7 @@ func updateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user Aut
 func updateUserPermissions(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
@@ -291,7 +315,11 @@ func updateUserPermissions(w http.ResponseWriter, r *http.Request, user Authoriz
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
+
 	include, includeExists := r.Form["include"]
 	exclude, excludeExists := r.Form["exclude"]
 	newRole, newRoleExists := r.Form["role"]
@@ -342,7 +370,7 @@ func updateUserPermissions(w http.ResponseWriter, r *http.Request, user Authoriz
 
 func getSingleUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil || !govalidator.IsNumeric(uid) {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
@@ -385,14 +413,17 @@ func getSingleUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, 
 
 func postUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
 
 	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
@@ -479,9 +510,15 @@ func postUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 
 	for key, val := range r.Form {
 		if strings.HasPrefix(key, "meta_") {
-			models.AddOrUpdateUserMeta(uint(userID), strings.TrimPrefix(key, "meta_"), val[0], false)
+			errUserMeta := models.AddOrUpdateUserMeta(uint(userID), strings.TrimPrefix(key, "meta_"), val[0], false)
+			if errUserMeta != nil {
+				log.Error(errUserMeta.Error())
+			}
 		} else if strings.HasPrefix(key, "umeta_") {
-			models.AddOrUpdateUserMeta(uint(userID), strings.TrimPrefix(key, "umeta_"), val[0], true)
+			errUserMeta := models.AddOrUpdateUserMeta(uint(userID), strings.TrimPrefix(key, "umeta_"), val[0], true)
+			if errUserMeta != nil {
+				log.Error(errUserMeta.Error())
+			}
 		}
 	}
 
@@ -496,14 +533,17 @@ func postUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 
 func deleteUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
 
 	hasUpdatePermission := hasPermission(&user, "uusd", tenantID)
 
@@ -524,15 +564,19 @@ func deleteUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser, ten
 
 func deleteUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	r.ParseForm()
-	metaKey, _ := mux.Vars(r)["key"]
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
+
+	metaKey := mux.Vars(r)["key"]
 
 	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
@@ -558,14 +602,17 @@ func deleteUserMeta(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 
 func deleteUserTenantRole(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenantID int) {
 	// Check Permission
-	uid, _ := mux.Vars(r)["id"]
+	uid := mux.Vars(r)["id"]
 	userID, errBadUserID := strconv.Atoi(uid)
 	if errBadUserID != nil {
 		jsonHttpRespond(w, nil, "user_id is invalid", http.StatusForbidden)
 		return
 	}
 
-	r.ParseForm()
+	errParse := r.ParseForm()
+	if errParse != nil {
+		log.Error(errParse.Error())
+	}
 
 	var hasUpdatePermission bool
 	if uint(userID) == user.User.ID {
