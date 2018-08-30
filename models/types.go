@@ -102,6 +102,7 @@ type UsersFilterFields struct {
 	Status      int
 	OrderBy     string
 	Order       string
+	IDs         string
 }
 
 // UserWithRole - user data + role data

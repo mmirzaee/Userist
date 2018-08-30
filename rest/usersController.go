@@ -1,9 +1,10 @@
 package rest
 
 import (
-	"fmt"
 	"github.com/asaskevich/govalidator"
+	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
+	"github.com/mmirzaee/userist/helper"
 	"github.com/mmirzaee/userist/models"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -34,6 +35,10 @@ func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenan
 	queryOrder := r.URL.Query().Get("order")
 	queryMetaKey := r.URL.Query().Get("meta_key")
 	queryMetaValue := r.URL.Query().Get("meta_value")
+	queryIDs := r.URL.Query().Get("ids")
+
+	resultInclude := r.URL.Query().Get("include")
+	resultExclude := r.URL.Query().Get("exclude")
 
 	if queryPage != "" {
 		if !govalidator.IsNumeric(queryPage) {
@@ -52,11 +57,14 @@ func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenan
 		}
 
 		status, _ = strconv.Atoi(queryStatus)
-
 	}
 
-	fmt.Println(tenantID)
-	Users := models.GetUsers(models.UsersFilterFields{
+	if resultExclude != "" && resultInclude != "" {
+		jsonHttpRespond(w, nil, "not able to use both include and exclude", http.StatusBadRequest)
+		return
+	}
+
+	users := models.GetUsers(models.UsersFilterFields{
 		DisplayName: queryDisplayName,
 		Role:        queryRole,
 		Status:      status,
@@ -66,11 +74,35 @@ func getUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tenan
 		Username:    queryUsername,
 		OrderBy:     queryOrderby,
 		Order:       queryOrder,
+		IDs:         queryIDs,
 		Page:        pageNo,
 	}, tenantID)
 
-	if len(Users) > 0 {
-		jsonHttpRespond(w, Users, "", http.StatusOK)
+	if len(users) > 0 {
+		var result []interface{}
+		for _, u := range users {
+			userMap := structs.Map(u)
+
+			if resultExclude != "" {
+				exclude := strings.Split(resultExclude, ",")
+				for _, e := range exclude {
+					delete(userMap, e)
+				}
+			}
+
+			if resultInclude != "" {
+				include := strings.Split(resultInclude, ",")
+				for key := range userMap {
+					if exists, _ := helper.Contains(key, include); !exists && key != "ID" {
+						delete(userMap, key)
+					}
+				}
+			}
+
+			result = append(result, userMap)
+		}
+
+		jsonHttpRespond(w, result, "", http.StatusOK)
 	} else {
 		jsonHttpRespond(w, nil, "users not found", http.StatusNotFound)
 	}

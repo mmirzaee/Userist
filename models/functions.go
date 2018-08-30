@@ -295,7 +295,10 @@ func GetUsers(args UsersFilterFields, tenantID int) []UserWithRole {
 		tx = tx.Joins("LEFT JOIN user_meta ON users.id = user_meta.user_id")
 		tx = tx.Where("meta_key = ? AND meta_value = ?", args.MetaKey, args.MetaValue)
 	}
-
+	if args.IDs != "" {
+		ids := strings.Split(args.IDs, ",")
+		tx = tx.Where("users.id IN (?)", ids)
+	}
 	tx = tx.Limit(20).Offset(uint64((args.Page - 1) * 20))
 
 	rows, err := tx.Rows()
