@@ -51,8 +51,15 @@ func postTenants(w http.ResponseWriter, r *http.Request, user AuthorizedUser, te
 		log.Error(errParse.Error())
 	}
 
-	name := r.Form["name"][0]
-	status := r.Form["status"][0]
+	name := ""
+	if len(r.Form["name"]) > 0{
+		name = r.Form["name"][0]
+	}
+
+	status := "1"
+	if len(r.Form["status"]) > 0{
+		status =r.Form["status"][0]
+	}
 
 	if !govalidator.IsNumeric(status) {
 		jsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)
@@ -85,8 +92,15 @@ func updateTenant(w http.ResponseWriter, r *http.Request, user AuthorizedUser, t
 		log.Error(errParse.Error())
 	}
 
-	name := r.Form["name"][0]
-	status := r.Form["status"][0]
+	name := ""
+	if len(r.Form["name"]) > 0{
+		name = r.Form["name"][0]
+	}
+
+	status := "1"
+	if len(r.Form["status"]) > 0{
+		status =r.Form["status"][0]
+	}
 
 	if !govalidator.IsNumeric(status) {
 		jsonHttpRespond(w, nil, "status is not valid", http.StatusBadRequest)

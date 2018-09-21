@@ -122,15 +122,38 @@ func postUsers(w http.ResponseWriter, r *http.Request, user AuthorizedUser, tena
 		log.Error(errParse.Error())
 	}
 
-	username := r.Form["username"][0]
-	password := r.Form["password"][0]
-	email := r.Form["email"][0]
-	displayName := r.Form["display_name"][0]
-	status := r.Form["status"][0]
-	role := r.Form["role"][0]
+	username := ""
+	if len(r.Form["username"]) > 0 {
+		username = r.Form["username"][0]
+	}
+
+	password := ""
+	if len(r.Form["password"]) > 0 {
+		password = r.Form["password"][0]
+	}
+
+	email := ""
+	if len(r.Form["email"]) > 0 {
+		email = r.Form["email"][0]
+	}
+
+	displayName := ""
+	if len(r.Form["display_name"]) > 0 {
+		displayName = r.Form["display_name"][0]
+	}
+
+	status := "1"
+	if len(r.Form["status"]) > 0 {
+		status = r.Form["status"][0]
+	}
+
+	role := ""
+	if len(r.Form["role"]) > 0 {
+		role = r.Form["role"][0]
+	}
 
 	// Validation
-	if username == "" || password == "" || email == "" || displayName == "" || status == "" {
+	if username == "" || password == "" || email == "" || displayName == "" {
 		jsonHttpRespond(w, nil, "username, password, email and display_name are required", http.StatusBadRequest)
 		return
 	}
@@ -262,8 +285,10 @@ func updateSingleUserMeta(w http.ResponseWriter, r *http.Request, user Authorize
 	}
 
 	metaKey := mux.Vars(r)["key"]
-	metaValue := r.Form["value"][0]
-
+	metaValue := ""
+	if len(r.Form["value"]) > 0 {
+		metaValue = r.Form["value"][0]
+	}
 	if metaKey == "" {
 		jsonHttpRespond(w, nil, "value is required", http.StatusBadRequest)
 		return
@@ -310,7 +335,10 @@ func updateSingleUniqueUserMeta(w http.ResponseWriter, r *http.Request, user Aut
 	}
 
 	metaKey := mux.Vars(r)["key"]
-	metaValue := r.Form["value"][0]
+	metaValue := ""
+	if len(r.Form["value"]) > 0 {
+		metaValue = r.Form["value"][0]
+	}
 
 	if metaKey == "" {
 		jsonHttpRespond(w, nil, "value is required", http.StatusBadRequest)
@@ -464,11 +492,33 @@ func postUpdateUser(w http.ResponseWriter, r *http.Request, user AuthorizedUser,
 		hasUpdatePermission = hasPermission(&user, "uou", tenantID)
 	}
 
-	password := r.Form["password"][0]
-	email := r.Form["email"][0]
-	displayName := r.Form["display_name"][0]
-	status := r.Form["status"][0]
-	role := r.Form["role"][0]
+
+
+
+	password := ""
+	if len(r.Form["password"]) > 0 {
+		password = r.Form["password"][0]
+	}
+
+	email := ""
+	if len(r.Form["email"]) > 0 {
+		email = r.Form["email"][0]
+	}
+
+	displayName := ""
+	if len(r.Form["display_name"]) > 0 {
+		displayName = r.Form["display_name"][0]
+	}
+
+	status := "1"
+	if len(r.Form["status"]) > 0 {
+		status = r.Form["status"][0]
+	}
+
+	role := ""
+	if len(r.Form["role"]) > 0 {
+		role = r.Form["role"][0]
+	}
 
 	updatesMetaData := false
 	for key := range r.Form {
